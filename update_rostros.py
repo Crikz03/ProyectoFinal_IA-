@@ -6,7 +6,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, confusion_m
 import seaborn as sns
 
 # Lista de sujetos (ajusta según tus carpetas)
-subjects = ["", "Aaron", "Mike", "Joe", "Brad"]
+subjects = ["", "Aaron", "Christian", "Heath", "Brad"]
 
 # Función para detectar rostros (sin cambios)
 def detect_face(img):
