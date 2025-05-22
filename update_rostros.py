@@ -6,9 +6,36 @@ from sklearn.metrics import precision_score, recall_score, f1_score, confusion_m
 import seaborn as sns
 
 # Lista de sujetos (ajusta según tus carpetas)
-subjects = ["", "Aaron", "Mike", "Joe", "Brad"]
+subjects = ["", "Aaron", "Christopher", "Heath", "Gary"]
 
-# Función para detectar rostros (sin cambios)
+def prepare_training_data(data_folder_path):
+    dirs = os.listdir(data_folder_path)
+    faces = []
+    labels = []
+    
+    for dir_name in dirs:
+        if not dir_name.startswith("s"):
+            continue
+            
+        label = int(dir_name.replace("s", ""))
+        subject_dir_path = os.path.join(data_folder_path, dir_name)
+        subject_images_names = os.listdir(subject_dir_path)
+        
+        for image_name in subject_images_names:
+            if image_name.startswith("."):
+                continue
+                
+            image_path = os.path.join(subject_dir_path, image_name)
+            image = cv2.imread(image_path)
+            
+            face, rect = detect_face(image)
+            if face is not None:
+                faces.append(face)
+                labels.append(label)
+                
+    return faces, labels
+
+# Función para detectar rostros
 def detect_face(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -18,7 +45,7 @@ def detect_face(img):
     (x, y, w, h) = faces[0]
     return gray[y:y+w, x:x+h], faces[0]
 
-# Función para dibujar rectángulo y texto (sin cambios)
+# Función para dibujar rectángulo y texto
 def draw_rectangle(img, rect):
     (x, y, w, h) = rect
     cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -26,48 +53,97 @@ def draw_rectangle(img, rect):
 def draw_text(img, text, x, y):
     cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0), 2)
 
-# Función para predecir y mostrar imágenes (modificada para evaluación)
+# Función para predecir y evaluar
+# Función para predecir y evaluar (versión modificada)
 def predict_and_evaluate(test_data_path):
     true_labels = []
     predicted_labels = []
-    test_images = []  # Almacenar imágenes para mostrar después
+    test_images = []
+    subjects_displayed = {}  # Diccionario para contar imágenes mostradas por sujeto
 
-   # Procesar imágenes de prueba
+    # Inicializar contadores para cada sujeto
+    for i in range(1, len(subjects)):
+        subjects_displayed[i] = 0
+
     for dir_name in os.listdir(test_data_path):
         if not dir_name.startswith("s"):
             continue
+            
         true_label = int(dir_name.replace("s", ""))
+        if subjects_displayed.get(true_label, 0) >= 2:  # Si ya mostramos 2 imágenes de este sujeto
+            continue
+            
         subject_dir_path = os.path.join(test_data_path, dir_name)
         
         for image_name in os.listdir(subject_dir_path):
+            if subjects_displayed.get(true_label, 0) >= 2:  # Limitar a 2 imágenes
+                break
+                
             if image_name.startswith("."):
                 continue
+                
             image_path = os.path.join(subject_dir_path, image_name)
             test_img = cv2.imread(image_path)
             if test_img is None:
                 continue
-            
-            # Detectar rostro y predecir
+                
             face, rect = detect_face(test_img)
             if face is not None:
                 predicted_label, confidence = face_recognizer.predict(face)
-                
-                # Dibujar rectángulo y texto en la imagen
                 img_with_prediction = test_img.copy()
                 draw_rectangle(img_with_prediction, rect)
                 draw_text(img_with_prediction, subjects[predicted_label], rect[0], rect[1]-5)
-                test_images.append(img_with_prediction)  # Guardar para mostrar
-                
+                test_images.append(img_with_prediction)
                 true_labels.append(true_label)
                 predicted_labels.append(predicted_label)
+                subjects_displayed[true_label] = subjects_displayed.get(true_label, 0) + 1
 
-    # Mostrar imágenes con predicciones
-    plt.figure(figsize=(15, 10))
-    for i, img in enumerate(test_images[:min(6, len(test_images))]):  # Mostrar hasta 6 imágenes
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        plt.subplot(2, 3, i+1)
-        plt.imshow(img_rgb)
-        plt.axis('off')
-        plt.title(f"Predicción: {subjects[predicted_labels[i]]}")
+    # Organizar las imágenes para mostrar (2 por sujeto)
+    plt.figure(figsize=(15, 5 * len(subjects[1:])))  # Ajustar altura según número de sujetos
+    for i, subject_id in enumerate(sorted(subjects_displayed.keys())):
+        subject_images = [img for idx, img in enumerate(test_images) if true_labels[idx] == subject_id]
+        
+        for j in range(min(2, len(subject_images))):  # Mostrar máximo 2 por sujeto
+            img_rgb = cv2.cvtColor(subject_images[j], cv2.COLOR_BGR2RGB)
+            plt.subplot(len(subjects[1:]), 2, i*2 + j + 1)  # Diseño de cuadrícula
+            plt.imshow(img_rgb)
+            plt.axis('off')
+            plt.title(f"{subjects[subject_id]}: Pred {subjects[predicted_labels[i*2 + j]]}")
+    
     plt.tight_layout()
     plt.show()
+
+    # Resto del código de métricas (sin cambios)
+    if len(true_labels) > 0:
+        precision = precision_score(true_labels, predicted_labels, average='weighted')
+        recall = recall_score(true_labels, predicted_labels, average='weighted')
+        f_score = f1_score(true_labels, predicted_labels, average='weighted')
+        accuracy = np.mean(np.array(true_labels) == np.array(predicted_labels))
+        
+        cm = confusion_matrix(true_labels, predicted_labels, labels=range(1, len(subjects)))
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                    xticklabels=subjects[1:], yticklabels=subjects[1:])
+        plt.xlabel('Predicho')
+        plt.ylabel('Verdadero')
+        plt.title('Matriz de Confusión')
+        plt.show()
+        
+        print("\n--- Métricas de Evaluación ---")
+        print(f"Exactitud (accuracy): {accuracy * 100:.2f}%")
+        print(f"Precisión (precision): {precision:.2f}")
+        print(f"Exhaustividad (recall): {recall:.2f}")
+        print(f"F-score: {f_score:.2f}")
+    else:
+        print("No se detectaron rostros en las imágenes de prueba.")
+# --- Entrenamiento del modelo ---
+print("Preparando datos de entrenamiento...")
+faces, labels = prepare_training_data("./traindata")
+print(f"Datos preparados: {len(faces)} rostros, {len(labels)} etiquetas")
+
+face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+face_recognizer.train(faces, np.array(labels))
+
+# --- Evaluar y mostrar resultados ---
+print("\nEvaluando modelo y mostrando predicciones...")
+predict_and_evaluate("./testdata")
