@@ -57,7 +57,7 @@ def draw_text(img, text, x, y):
 # Función para predecir y evaluar
 # Función para predecir y evaluar (versión modificada)
 def predict_and_evaluate(test_data_path):
-    IMAGENES_POR_SUJETO = 3  # ¡Cambia aquí el número deseado!
+    IMAGENES_POR_SUJETO = 3
     true_labels = []
     predicted_labels = []
     test_images = []
