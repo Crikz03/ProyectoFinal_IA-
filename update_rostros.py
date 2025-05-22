@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 #Si las carpetas de la base de datos no empiezan numeradas en 0, entonces no se coloca un nombre en el índice 0 de la lista.
-subjects = ["", "Chester", "Mike","Joe","Brad"]
+subjects = ["", "Aaron", "Mike","Joe","Brad"]
 #subjects = ["", "1", "2","3","4"]
 
 def detect_face(img):
@@ -138,9 +138,6 @@ print("Prediciendo imágenes...")
 test_imgs = [
     cv2.imread("./testdata/s1/9326871.15.jpg"),  
     cv2.imread("./testdata/s1/9326871.17.jpg"), 
-    cv2.imread("./testdata/s2/9332898.15.jpg"),  
-    cv2.imread("./testdata/s3/9338446.16.jpg"), 
-    cv2.imread("./testdata/s4/9338454.17.jpg"), 
 ]
 
 # Predecir y mostrar cada imagen
