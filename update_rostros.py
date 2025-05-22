@@ -57,12 +57,13 @@ def draw_text(img, text, x, y):
 # Función para predecir y evaluar
 # Función para predecir y evaluar (versión modificada)
 def predict_and_evaluate(test_data_path):
+    IMAGENES_POR_SUJETO = 3  # ¡Cambia aquí el número deseado!
     true_labels = []
     predicted_labels = []
     test_images = []
-    subjects_displayed = {}  # Diccionario para contar imágenes mostradas por sujeto
+    subjects_displayed = {}
 
-    # Inicializar contadores para cada sujeto
+    # Inicializar contadores
     for i in range(1, len(subjects)):
         subjects_displayed[i] = 0
 
@@ -71,13 +72,13 @@ def predict_and_evaluate(test_data_path):
             continue
             
         true_label = int(dir_name.replace("s", ""))
-        if subjects_displayed.get(true_label, 0) >= 2:  # Si ya mostramos 2 imágenes de este sujeto
+        if subjects_displayed.get(true_label, 0) >= IMAGENES_POR_SUJETO:  # Límite ajustable
             continue
             
         subject_dir_path = os.path.join(test_data_path, dir_name)
         
         for image_name in os.listdir(subject_dir_path):
-            if subjects_displayed.get(true_label, 0) >= 2:  # Limitar a 2 imágenes
+            if subjects_displayed.get(true_label, 0) >= IMAGENES_POR_SUJETO:  # Límite aquí
                 break
                 
             if image_name.startswith("."):
@@ -99,20 +100,22 @@ def predict_and_evaluate(test_data_path):
                 predicted_labels.append(predicted_label)
                 subjects_displayed[true_label] = subjects_displayed.get(true_label, 0) + 1
 
-    # Organizar las imágenes para mostrar (2 por sujeto)
-    plt.figure(figsize=(15, 5 * len(subjects[1:])))  # Ajustar altura según número de sujetos
+    # Ajustar diseño de la visualización
+    plt.figure(figsize=(15, 5 * len(subjects[1:])))
     for i, subject_id in enumerate(sorted(subjects_displayed.keys())):
         subject_images = [img for idx, img in enumerate(test_images) if true_labels[idx] == subject_id]
         
-        for j in range(min(2, len(subject_images))):  # Mostrar máximo 2 por sujeto
+        for j in range(min(IMAGENES_POR_SUJETO, len(subject_images))):  # Usar la variable aquí
             img_rgb = cv2.cvtColor(subject_images[j], cv2.COLOR_BGR2RGB)
-            plt.subplot(len(subjects[1:]), 2, i*2 + j + 1)  # Diseño de cuadrícula
+            plt.subplot(len(subjects[1:]), IMAGENES_POR_SUJETO, i*IMAGENES_POR_SUJETO + j + 1)  # Ajuste en la cuadrícula
             plt.imshow(img_rgb)
             plt.axis('off')
-            plt.title(f"{subjects[subject_id]}: Pred {subjects[predicted_labels[i*2 + j]]}")
+            plt.title(f"{subjects[subject_id]}: Pred {subjects[predicted_labels[i*IMAGENES_POR_SUJETO + j]]}")
     
     plt.tight_layout()
     plt.show()
+
+    # Resto del código (métricas) permanece igual...
 
     # Resto del código de métricas (sin cambios)
     if len(true_labels) > 0:
