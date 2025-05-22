@@ -5,8 +5,9 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 import seaborn as sns
 
-# Lista de sujetos (ajusta según tus carpetas)
+# Lista de sujet
 subjects = ["", "Aaron", "Christopher", "Heath", "Gary"]
+
 
 def prepare_training_data(data_folder_path):
     dirs = os.listdir(data_folder_path)
